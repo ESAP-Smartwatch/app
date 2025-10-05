@@ -46,7 +46,7 @@ const HomeScreen = () => {
       </View>
 
       <View style={styles.tipsContainer}>
-        <Text style={styles.tipsTitle}>💡 Quick Tips</Text>
+        <Text style={styles.tipsTitle}>Quick Tips</Text>
         <Text style={styles.tipText}>• Stay hydrated during workouts</Text>
         <Text style={styles.tipText}>• Aim for 30 minutes of activity daily</Text>
         <Text style={styles.tipText}>• Don't forget to warm up and cool down</Text>

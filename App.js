@@ -7,6 +7,7 @@ import { WorkoutProvider } from './src/context/WorkoutContext';
 import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import BluetoothScreen from './src/screens/BluetoothScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -23,6 +24,8 @@ export default function App() {
                 iconName = focused ? 'home' : 'home-outline';
               } else if (route.name === 'Workout') {
                 iconName = focused ? 'fitness' : 'fitness-outline';
+              } else if (route.name === 'Bluetooth') {
+                iconName = focused ? 'bluetooth' : 'bluetooth-outline';
               } else if (route.name === 'Stats') {
                 iconName = focused ? 'stats-chart' : 'stats-chart-outline';
               }
@@ -49,6 +52,11 @@ export default function App() {
             name="Workout" 
             component={WorkoutScreen}
             options={{ title: 'Workouts' }}
+          />
+          <Tab.Screen 
+            name="Bluetooth" 
+            component={BluetoothScreen}
+            options={{ title: 'Bluetooth' }}
           />
           <Tab.Screen 
             name="Stats" 

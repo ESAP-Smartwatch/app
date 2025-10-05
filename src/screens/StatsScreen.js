@@ -27,7 +27,7 @@ const StatsScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Overall Statistics</Text>
+        <Text style={styles.sectionTitle}>Overall Statistics</Text>
         <StatCard
           icon="flame"
           title="Total Calories Burned"
@@ -52,7 +52,7 @@ const StatsScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📈 Averages</Text>
+        <Text style={styles.sectionTitle}>Averages</Text>
         <StatCard
           icon="analytics"
           title="Average Calories per Workout"
@@ -70,9 +70,8 @@ const StatsScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🏆 Achievements</Text>
+        <Text style={styles.sectionTitle}>Achievements</Text>
         <View style={styles.achievementCard}>
-          <Text style={styles.achievementEmoji}>🔥</Text>
           <Text style={styles.achievementTitle}>Workout Streak</Text>
           <Text style={styles.achievementValue}>{streak} workouts logged</Text>
         </View>
@@ -80,7 +79,7 @@ const StatsScreen = () => {
 
       {Object.keys(workoutBreakdown).length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💪 Workout Types</Text>
+          <Text style={styles.sectionTitle}>Workout Types</Text>
           <View style={styles.breakdownCard}>
             {Object.entries(workoutBreakdown).map(([type, count]) => (
               <View key={type} style={styles.breakdownRow}>
@@ -126,10 +125,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  achievementEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
   },
   achievementTitle: {
     fontSize: 18,
