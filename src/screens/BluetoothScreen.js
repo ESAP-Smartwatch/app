@@ -20,25 +20,25 @@ const BluetoothScreen = () => {
   const [availableDevices] = useState([
     {
       id: '1',
-      name: 'Fitness Tracker Pro',
+      name: 'Apple Watch Series 6',
       type: 'tracker',
       signalStrength: 'strong',
     },
     {
       id: '2',
-      name: 'SmartWatch Ultra',
+      name: 'Garmin Instinct 2',
       type: 'watch',
       signalStrength: 'medium',
     },
     {
       id: '3',
-      name: 'Heart Rate Monitor',
+      name: 'Samsung Display',
       type: 'sensor',
       signalStrength: 'weak',
     },
     {
       id: '4',
-      name: 'Running Pod',
+      name: 'SPEAKER',
       type: 'sensor',
       signalStrength: 'strong',
     },
