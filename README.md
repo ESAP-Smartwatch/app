@@ -1,13 +1,6 @@
-# Fitness Tracker App
+# Smartwatch Health Tracking App
 
-A simple React Native fitness tracking app built with Expo.
-
-## Features
-
-- 🏠 **Home Dashboard**: View your overall fitness statistics at a glance
-- 💪 **Workout Tracking**: Log and manage your workouts with details like type, duration, and calories
-- 📊 **Statistics**: View detailed analytics about your fitness journey
-- 🎯 **Multiple Workout Types**: Track Running, Cycling, Swimming, Gym, Yoga, and Walking
+This app syncs with the open-source smartwatch, scanning for Bluetooth signals and attempting to pair and obtain a UTF-8 encoded file with heart rate and movement data, along with the UUID identifier for persistent sync. Built by the 2025 Embedded Systems @ Purdue Smartwatch Team.
 
 ## Getting Started
 
@@ -25,20 +18,65 @@ A simple React Native fitness tracking app built with Expo.
 npm install
 ```
 
-2. Start the development server:
+2. Run on iOS:
+```bash
+npx expo start
+```
+Press `i`
+
+3. Run on Android:
+```bash
+npm expo start
+```
+Press `a`
+
+4. Run dev server (back-end)
 ```bash
 npm start
 ```
 
-3. Run on iOS:
+## Starting Guide for Embedded Systems @ Purdue contributors
+Download [GitHub Desktop](https://desktop.github.com/download/) and clone this repository to the GitHub folder in either `C:\Users\<YourUsername>\Documents\GitHub` for Windows or `~/Documents/GitHub` for MacOS/Linux.
+Launch Visual Studio Code (download [here](https://code.visualstudio.com/)) and additionally install [Node.js](https://nodejs.org/en/download). Detailed instructions below, organized by platform. Installation instructions are current as of October 5, 2025. Note that you do not need to run the commands below if you already have Node.js installed on your device.
+
+#### Windows
+Use Powershell:
 ```bash
-npm run ios
+# Download and install Chocolatey:
+powershell -c "irm https://community.chocolatey.org/install.ps1|iex"
+
+# Download and install Node.js:
+choco install nodejs --version="22.20.0"
+
+# Verify the Node.js version:
+node -v # Should print "v22.20.0".
+
+# Verify npm version:
+npm -v # Should print "10.9.3".
 ```
 
-4. Run on Android:
+#### MacOS/Linux
+Use Terminal:
 ```bash
-npm run android
+# Download and install Homebrew (MacOS/Linux package manager)
+curl -o- https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash
+
+# Download and install Node.js:
+brew install node@22
+
+# Verify the Node.js version:
+node -v # Should print "v22.20.0".
+
+# Verify npm version:
+npm -v # Should print "10.9.3".
 ```
+
+Once Node.js is installed, open the project in Visual Studio Code (the folder will be named `app`) and run `npm install` to complete setup.
+
+## Tech Stack
+- JavaScript & TypeScript for front-end (built with React.js)
+- NodeJS for back-end
+- Built with React Native for inter-platform compatibility across web, iOS, and Android devices.
 
 ## App Structure
 
@@ -81,6 +119,10 @@ app/
 - Delete workouts
 - Modal interface for easy workout entry
 
+### Bluetooth Screen
+- View current paired devices
+- Add new devices for fitness data tracking through BLE with custom device UUID
+
 ### Statistics Screen
 - Overall statistics view
 - Average calculations
@@ -89,5 +131,3 @@ app/
 - Motivational quotes
 
 ## License
-
-MIT
