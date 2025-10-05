@@ -4,7 +4,7 @@ This app syncs with the open-source smartwatch, scanning for Bluetooth signals a
 
 ## Starting Guide for Embedded Systems @ Purdue contributors
 Download [GitHub Desktop](https://desktop.github.com/download/) and clone this repository to the GitHub folder in either `C:\Users\<YourUsername>\Documents\GitHub` for Windows or `~/Documents/GitHub` for MacOS/Linux.
-Launch Visual Studio Code (download [here](https://code.visualstudio.com/)) and download [Node.js](https://nodejs.org/en/download). Detailed instructions below, organized by platform. Installation instructions are current as of October 5, 2025.
+Launch Visual Studio Code (download [here](https://code.visualstudio.com/)) and additionally install [Node.js](https://nodejs.org/en/download). Detailed instructions below, organized by platform. Installation instructions are current as of October 5, 2025.
 
 #### Windows
 Use Powershell:
