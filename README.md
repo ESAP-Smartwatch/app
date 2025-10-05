@@ -127,7 +127,5 @@ app/
 - Overall statistics view
 - Average calculations
 - Workout type breakdown
-- Achievement tracking
-- Motivational quotes
 
 ## License
