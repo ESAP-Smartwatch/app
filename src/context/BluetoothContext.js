@@ -185,14 +185,24 @@ export const BluetoothProvider = ({ children }) => {
     try {
       console.log('Connecting to device:', deviceId);
       
+      // Stop scanning before connecting
+      if (isScanning) {
+        manager.stopDeviceScan();
+        setIsScanning(false);
+      }
+      
       const device = await manager.connectToDevice(deviceId, {
-        timeout: 10000,
+        timeout: 15000, // Increased timeout to 15 seconds
+        requestMTU: 512, // Request larger MTU for better data transfer
       });
       
       console.log('Connected to device:', device.name);
       
       // Discover all services and characteristics
+      console.log('Discovering services and characteristics...');
       await device.discoverAllServicesAndCharacteristics();
+      
+      console.log('Discovery complete');
       
       setConnectedDevice({
         id: device.id,
@@ -210,13 +220,23 @@ export const BluetoothProvider = ({ children }) => {
         }
       });
 
-      // Start monitoring accelerometer data
+      // List available services and characteristics
+      const services = await device.services();
+      console.log('Available services:', services.map(s => s.uuid));
+      
+      for (const service of services) {
+        const characteristics = await service.characteristics();
+        console.log(`Service ${service.uuid} characteristics:`, 
+                    characteristics.map(c => ({ uuid: c.uuid, properties: c.isReadable ? 'R' : '' + c.isWritableWithResponse ? 'W' : '' + c.isNotifiable ? 'N' : '' })));
+      }
+
+      // Start monitoring accelerometer data if the service is available
       startMonitoringAccelerometer(device);
       
       Alert.alert('Success', `Connected to ${device.name}`);
     } catch (error) {
       console.error('Connection error:', error);
-      Alert.alert('Connection Failed', `Could not connect to device: ${error.message}`);
+      Alert.alert('Connection Failed', `Could not connect to device: ${error.message}\n\nMake sure the Arduino is running the correct BLE code with services and characteristics.`);
     }
   };
 
