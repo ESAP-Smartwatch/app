@@ -48,6 +48,15 @@
         </dict>
       </dict>
     </dict>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to connect to bluetooth devices</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>This app needs Bluetooth to connect to your fitness tracking devices.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>bluetooth-central</string>
+      <string>bluetooth-peripheral</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
