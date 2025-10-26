@@ -129,3 +129,4 @@ app/
 - Workout type breakdown
 
 ## License
+This project is licensed under the Apache 2.0 License. (C) 2025 William Zhang
