@@ -1,62 +1,191 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const WorkoutContext = createContext();
 
 export const WorkoutProvider = ({ children }) => {
-  const [workouts, setWorkouts] = useState([
-    {
-      id: '1',
-      type: 'Running',
-      duration: 30,
-      calories: 300,
-      date: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      type: 'Gym',
-      duration: 45,
-      calories: 250,
-      date: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ]);
-
-  // Health metrics data
+  const [workouts, setWorkouts] = useState([]);
   const [healthData, setHealthData] = useState({
-    steps: generateStepsData(),
-    heartRate: generateHeartRateData(),
-    weight: 70, // kg
-    height: 175, // cm
+    steps: [],
+    hourlySteps: [],
+    heartRate: [],
+    weight: 70,
+    height: 175,
   });
 
-  // Generate simulated steps data for the past 7 days
+  // Generate comprehensive random test data on startup
+  useEffect(() => {
+    setWorkouts(generateRandomWorkouts());
+    setHealthData({
+      steps: generateStepsData(),
+      hourlySteps: generateHourlyStepsData(),
+      heartRate: generateHeartRateData(),
+      weight: Math.floor(60 + Math.random() * 40), // 60-100 kg
+      height: Math.floor(160 + Math.random() * 30), // 160-190 cm
+    });
+  }, []);
+
+  // Generate random workouts for the past 30 days
+  function generateRandomWorkouts() {
+    const workoutTypes = ['Running', 'Cycling', 'Swimming', 'Gym', 'Yoga', 'Walking'];
+    const workouts = [];
+    const numWorkouts = Math.floor(25 + Math.random() * 25); // 25-50 workouts over 30 days
+
+    for (let i = 0; i < numWorkouts; i++) {
+      const daysAgo = Math.floor(Math.random() * 30); // Past 30 days
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      date.setHours(Math.floor(6 + Math.random() * 14), Math.floor(Math.random() * 60), 0, 0);
+
+      const type = workoutTypes[Math.floor(Math.random() * workoutTypes.length)];
+      let duration, calories;
+
+      // More realistic workout durations and calorie burns
+      switch (type) {
+        case 'Running':
+          duration = Math.floor(20 + Math.random() * 40); // 20-60 min
+          calories = Math.floor(duration * 9); // ~9 cal/min
+          break;
+        case 'Cycling':
+          duration = Math.floor(30 + Math.random() * 45); // 30-75 min
+          calories = Math.floor(duration * 7);
+          break;
+        case 'Swimming':
+          duration = Math.floor(20 + Math.random() * 40); // 20-60 min
+          calories = Math.floor(duration * 10);
+          break;
+        case 'Gym':
+          duration = Math.floor(30 + Math.random() * 45); // 30-75 min
+          calories = Math.floor(duration * 6);
+          break;
+        case 'Yoga':
+          duration = Math.floor(30 + Math.random() * 45); // 30-75 min
+          calories = Math.floor(duration * 3);
+          break;
+        case 'Walking':
+          duration = Math.floor(20 + Math.random() * 40); // 20-60 min
+          calories = Math.floor(duration * 4);
+          break;
+        default:
+          duration = 30;
+          calories = 200;
+      }
+
+      workouts.push({
+        id: `workout_${i}_${Date.now()}`,
+        type,
+        duration,
+        calories,
+        date: date.toISOString(),
+      });
+    }
+
+    // Sort by date, most recent first
+    return workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  // Generate simulated steps data for the past 30 days (daily totals)
   function generateStepsData() {
     const data = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 29; i >= 0; i--) { // 30 days of data
       const date = new Date();
       date.setDate(date.getDate() - i);
+      
+      // More realistic step patterns - weekends typically have different patterns
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const baseSteps = isWeekend ? 5000 : 7500;
+      const variation = Math.random() * 4000;
+      
       data.push({
         date: date.toISOString().split('T')[0],
-        steps: Math.floor(5000 + Math.random() * 7000),
+        steps: Math.floor(baseSteps + variation),
       });
     }
     return data;
   }
 
-  // Generate simulated heart rate data for today
+  // Generate hourly steps data for the past 30 days
+  function generateHourlyStepsData() {
+    const data = [];
+    const now = new Date();
+    
+    // Generate data for the past 30 days
+    for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+      const targetDate = new Date();
+      targetDate.setDate(now.getDate() - daysAgo);
+      
+      // For today, only go up to current hour; for past days, full 24 hours
+      const maxHour = daysAgo === 0 ? now.getHours() : 23;
+      
+      for (let hour = 0; hour <= maxHour; hour++) {
+        const date = new Date(targetDate);
+        date.setHours(hour, 0, 0, 0);
+        
+        // Simulate realistic hourly step patterns
+        let baseSteps;
+        if (hour < 6) {
+          baseSteps = 0; // Sleep: no steps
+        } else if (hour < 8) {
+          baseSteps = 200 + Math.random() * 300; // Morning routine: 200-500
+        } else if (hour < 12) {
+          baseSteps = 400 + Math.random() * 600; // Active morning: 400-1000
+        } else if (hour < 14) {
+          baseSteps = 300 + Math.random() * 400; // Lunch time: 300-700
+        } else if (hour < 18) {
+          baseSteps = 500 + Math.random() * 700; // Active afternoon: 500-1200
+        } else if (hour < 22) {
+          baseSteps = 300 + Math.random() * 500; // Evening: 300-800
+        } else {
+          baseSteps = 50 + Math.random() * 150; // Pre-sleep: 50-200
+        }
+        
+        data.push({
+          time: date.toISOString(),
+          steps: Math.round(baseSteps),
+        });
+      }
+    }
+    
+    return data;
+  }
+
+  // Generate simulated heart rate data for the past 30 days (24 hours per day)
   function generateHeartRateData() {
     const data = [];
     const now = new Date();
-    for (let i = 0; i < 24; i++) {
-      const time = new Date(now);
-      time.setHours(i, 0, 0, 0);
-      // Simulate heart rate pattern (lower at night, higher during day)
-      const baseRate = i < 6 || i > 22 ? 60 : 75;
-      const variation = Math.random() * 20;
-      data.push({
-        time: time.toISOString(),
-        bpm: Math.round(baseRate + variation),
-      });
+    
+    // Generate data for the past 30 days
+    for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+      const targetDate = new Date();
+      targetDate.setDate(now.getDate() - daysAgo);
+      
+      // For today, only go up to current hour; for past days, full 24 hours
+      const maxHour = daysAgo === 0 ? now.getHours() : 23;
+      
+      for (let hour = 0; hour <= maxHour; hour++) {
+        const date = new Date(targetDate);
+        date.setHours(hour, 0, 0, 0);
+        
+        // Simulate realistic heart rate pattern
+        let baseRate;
+        if (hour < 6) {
+          baseRate = 58 + Math.random() * 7; // Sleep: 58-65 BPM
+        } else if (hour < 12) {
+          baseRate = 68 + Math.random() * 10; // Morning: 68-78 BPM
+        } else if (hour < 18) {
+          baseRate = 72 + Math.random() * 13; // Afternoon: 72-85 BPM
+        } else if (hour < 22) {
+          baseRate = 70 + Math.random() * 10; // Evening: 70-80 BPM
+        } else {
+          baseRate = 62 + Math.random() * 8; // Pre-sleep: 62-70 BPM
+        }
+        
+        data.push({
+          time: date.toISOString(),
+          bpm: Math.round(baseRate),
+        });
+      }
     }
+    
     return data;
   }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,13 +9,12 @@ import {
   Modal,
   TextInput,
   Alert,
-  SafeAreaView,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useWorkouts } from '../context/WorkoutContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,7 +34,111 @@ const StatsScreen = () => {
   const [dataValue, setDataValue] = useState('');
   const [dataDate, setDataDate] = useState(new Date());
   const [showManageModal, setShowManageModal] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(1));
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState('day'); // 'day' or 'week'
+
+  // Refs for scrolling to the right (most recent data)
+  const stepsScrollRef = useRef(null);
+  const heartRateScrollRef = useRef(null);
+
+  // Scroll to the far right when data changes
+  useEffect(() => {
+    if (selectedGraph) {
+      setTimeout(() => {
+        if (selectedGraph.type === 'steps' && stepsScrollRef.current && viewMode === 'day') {
+          stepsScrollRef.current.scrollToEnd({ animated: false });
+        }
+        if (selectedGraph.type === 'heartRate' && heartRateScrollRef.current) {
+          heartRateScrollRef.current.scrollToEnd({ animated: false });
+        }
+      }, 100);
+    }
+  }, [selectedGraph, selectedDate, viewMode]);
+
+  // Helper function to filter data based on selected date and view mode
+  const getFilteredStepsData = () => {
+    if (viewMode === 'day') {
+      // Get hourly data for the selected day only
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      return healthData.hourlySteps ? healthData.hourlySteps.filter(s => {
+        const stepDate = new Date(s.time).toISOString().split('T')[0];
+        return stepDate === dateStr;
+      }) : [];
+    } else {
+      // Get daily data for the week ending on selected date
+      const endDate = new Date(selectedDate);
+      const startDate = new Date(selectedDate);
+      startDate.setDate(startDate.getDate() - 6);
+      
+      return healthData.steps.filter(s => {
+        const date = new Date(s.date);
+        return date >= startDate && date <= endDate;
+      });
+    }
+  };
+
+  const getFilteredHeartRateData = () => {
+    if (viewMode === 'day') {
+      // Get heart rate data for the selected day only
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      return healthData.heartRate.filter(hr => {
+        const hrDate = new Date(hr.time).toISOString().split('T')[0];
+        return hrDate === dateStr;
+      });
+    } else {
+      // Get heart rate data for the week ending on selected date
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      const startDate = new Date(selectedDate);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      
+      return healthData.heartRate.filter(hr => {
+        const date = new Date(hr.time);
+        return date >= startDate && date <= endDate;
+      });
+    }
+  };
+
+  const getFilteredWorkoutsData = () => {
+    if (viewMode === 'day') {
+      // Get workouts for the selected day only
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      return workouts.filter(w => {
+        const workoutDate = new Date(w.date).toISOString().split('T')[0];
+        return workoutDate === dateStr;
+      });
+    } else {
+      // Get workouts for the week ending on selected date
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      const startDate = new Date(selectedDate);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      
+      return workouts.filter(w => {
+        const date = new Date(w.date);
+        return date >= startDate && date <= endDate;
+      });
+    }
+  };
+
+  // Get filtered data based on selected date/view mode (for modal only)
+  const filteredStepsData = getFilteredStepsData();
+  const filteredHeartRateData = getFilteredHeartRateData();
+  const filteredWorkoutsData = getFilteredWorkoutsData();
+
+  // Get TODAY's data for main stats page (always show today only)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayHourlySteps = healthData.hourlySteps ? healthData.hourlySteps.filter(s => {
+    const stepDate = new Date(s.time).toISOString().split('T')[0];
+    return stepDate === todayStr;
+  }) : [];
+  
+  const todayHeartRate = healthData.heartRate ? healthData.heartRate.filter(hr => {
+    const hrDate = new Date(hr.time).toISOString().split('T')[0];
+    return hrDate === todayStr;
+  }) : [];
 
   // Calculate workout type breakdown
   const workoutBreakdown = workouts.reduce((acc, workout) => {
@@ -51,42 +154,105 @@ const StatsScreen = () => {
     ? Math.round(stats.totalDuration / workouts.length)
     : 0;
 
-  // Prepare chart data
-  const stepsChartData = {
-    labels: healthData.steps.map(s => {
-      const date = new Date(s.date);
-      return `${date.getMonth() + 1}/${date.getDate()}`;
+  // Main page chart data (TODAY ONLY - show labels every 4 hours)
+  const mainStepsChartData = {
+    labels: todayHourlySteps.map((s, index) => {
+      const time = new Date(s.time);
+      const hours = time.getHours();
+      // Only show label every 4 hours (0, 4, 8, 12, 16, 20)
+      if (hours % 4 === 0) {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}${period}`;
+      }
+      return ''; // Empty string for non-labeled hours
     }),
     datasets: [{
-      data: healthData.steps.map(s => s.steps),
-      color: (opacity = 1) => `rgba(52, 199, 89, ${opacity})`,
+      data: todayHourlySteps.length > 0 ? todayHourlySteps.map(s => s.steps) : [0],
+      color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
       strokeWidth: 3,
     }],
   };
 
-  const heartRateChartData = {
-    labels: healthData.heartRate
-      .filter((_, i) => i % 4 === 0)
-      .map(hr => {
-        const time = new Date(hr.time);
-        return `${time.getHours()}:00`;
-      }),
+  const mainHeartRateChartData = {
+    labels: todayHeartRate.map((hr, index) => {
+      const time = new Date(hr.time);
+      const hours = time.getHours();
+      // Only show label every 4 hours (0, 4, 8, 12, 16, 20)
+      if (hours % 4 === 0) {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}${period}`;
+      }
+      return ''; // Empty string for non-labeled hours
+    }),
     datasets: [{
-      data: healthData.heartRate
-        .filter((_, i) => i % 4 === 0)
-        .map(hr => hr.bpm),
-      color: (opacity = 1) => `rgba(255, 59, 48, ${opacity})`,
+      data: todayHeartRate.length > 0 ? todayHeartRate.map(hr => hr.bpm) : [0],
+      color: (opacity = 1) => `rgba(255, 45, 85, ${opacity})`,
+      strokeWidth: 2,
+    }],
+  };
+
+  // Modal chart data (filtered by selected date and view mode)
+  const stepsChartData = {
+    labels: filteredStepsData.map(s => {
+      if (viewMode === 'day') {
+        // Hourly view - show time every 4 hours
+        const time = new Date(s.time);
+        const hours = time.getHours();
+        if (hours % 4 === 0) {
+          const period = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}${period}`;
+        }
+        return '';
+      } else {
+        // Weekly view - show date
+        const date = new Date(s.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }
+    }),
+    datasets: [{
+      data: filteredStepsData.length > 0 ? filteredStepsData.map(s => s.steps) : [0],
+      color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`, // iOS blue
       strokeWidth: 3,
     }],
   };
+
+  // Improved heart rate chart - make it scrollable with wider width
+  const heartRateChartData = {
+    labels: filteredHeartRateData.map(hr => {
+      const time = new Date(hr.time);
+      if (viewMode === 'day') {
+        const hours = time.getHours();
+        // Show label every 4 hours
+        if (hours % 4 === 0) {
+          const period = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          return `${displayHours}${period}`;
+        }
+        return '';
+      } else {
+        return `${time.getMonth() + 1}/${time.getDate()}`;
+      }
+    }),
+    datasets: [{
+      data: filteredHeartRateData.length > 0 ? filteredHeartRateData.map(hr => hr.bpm) : [0],
+      color: (opacity = 1) => `rgba(255, 45, 85, ${opacity})`, // iOS pink
+      strokeWidth: 2,
+    }],
+  };
+  
+  // Calculate chart width based on data points (50px per data point for readability)
+  const heartRateChartWidth = Math.max(screenWidth - 40, filteredHeartRateData.length * 50);
 
   const caloriesChartData = {
-    labels: workouts.slice(0, 7).reverse().map((w, i) => {
+    labels: filteredWorkoutsData.slice(0, 10).reverse().map((w, i) => {
       const date = new Date(w.date);
       return `${date.getMonth() + 1}/${date.getDate()}`;
     }),
     datasets: [{
-      data: workouts.slice(0, 7).reverse().map(w => w.calories),
+      data: filteredWorkoutsData.length > 0 ? filteredWorkoutsData.slice(0, 10).reverse().map(w => w.calories) : [0],
     }],
   };
 
@@ -94,124 +260,245 @@ const StatsScreen = () => {
     backgroundGradientFrom: COLORS.surface,
     backgroundGradientTo: COLORS.surface,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(240, 81, 56, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(29, 29, 31, ${opacity})`,
+    color: (opacity = 1) => `rgba(88, 86, 214, ${opacity})`, // iOS purple
+    labelColor: (opacity = 1) => `rgba(60, 60, 67, ${opacity})`, // iOS label gray
     style: {
       borderRadius: 16,
     },
     propsForDots: {
-      r: '5',
+      r: '6',
       strokeWidth: '2',
-      stroke: COLORS.primary,
+      stroke: 'rgba(88, 86, 214, 1)', // iOS purple
+      fill: '#FFFFFF',
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
       strokeWidth: 1,
-      stroke: COLORS.border,
+      stroke: 'rgba(0, 0, 0, 0.05)', // Very subtle grid lines
     },
   };
 
   const renderExpandedGraph = () => {
     if (!selectedGraph) return null;
 
+    // Helper functions for date navigation
+    const goToPreviousDay = () => {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(newDate.getDate() - 1);
+      setSelectedDate(newDate);
+    };
+
+    const goToNextDay = () => {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(newDate.getDate() + 1);
+      setSelectedDate(newDate);
+    };
+
+    const goToPreviousWeek = () => {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(newDate.getDate() - 7);
+      setSelectedDate(newDate);
+    };
+
+    const goToNextWeek = () => {
+      const newDate = new Date(selectedDate);
+      newDate.setDate(newDate.getDate() + 7);
+      setSelectedDate(newDate);
+    };
+
+    const formatDate = (date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
     return (
       <Modal
         visible={!!selectedGraph}
-        animationType="fade"
+        animationType="slide"
         transparent={false}
         onRequestClose={() => setSelectedGraph(null)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
-          <Animated.View style={[styles.expandedGraphContainer, { opacity: fadeAnim }]}>
-            <View style={styles.expandedGraphHeader}>
-              <Text style={styles.expandedGraphTitle}>{selectedGraph.title}</Text>
-            </View>
-
-            {/* Floating Close Button */}
+        <SafeAreaView style={styles.modalSafeArea} edges={['left', 'right', 'bottom']}>
+          {/* Fixed Header positioned well below dynamic island */}
+          <View style={styles.fixedModalHeader}>
+            <Text style={styles.expandedGraphTitle}>{selectedGraph.title}</Text>
             <TouchableOpacity 
-              style={styles.floatingCloseButton}
-              onPress={() => {
-                Animated.timing(fadeAnim, {
-                  toValue: 0,
-                  duration: 200,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setSelectedGraph(null);
-                  fadeAnim.setValue(1);
-                });
-              }}
+              style={styles.modalCloseButton}
+              onPress={() => setSelectedGraph(null)}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={28} color="#fff" />
+              <Ionicons name="close-circle" size={36} color="#FF3B30" />
             </TouchableOpacity>
+          </View>
 
-            <ScrollView style={styles.expandedGraphContent}>
+          {/* Date Picker Controls */}
+          <View style={styles.datePickerContainer}>
+            <View style={styles.viewModeToggle}>
+              <TouchableOpacity
+                style={[styles.viewModeButton, viewMode === 'day' && styles.viewModeButtonActive]}
+                onPress={() => setViewMode('day')}
+              >
+                <Text style={[styles.viewModeText, viewMode === 'day' && styles.viewModeTextActive]}>Day</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.viewModeButton, viewMode === 'week' && styles.viewModeButtonActive]}
+                onPress={() => setViewMode('week')}
+              >
+                <Text style={[styles.viewModeText, viewMode === 'week' && styles.viewModeTextActive]}>Week</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.dateNavigation}>
+              <TouchableOpacity 
+                style={styles.dateNavButton}
+                onPress={viewMode === 'day' ? goToPreviousDay : goToPreviousWeek}
+              >
+                <Ionicons name="chevron-back" size={24} color="#007AFF" />
+              </TouchableOpacity>
+              
+              <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+              
+              <TouchableOpacity 
+                style={styles.dateNavButton}
+                onPress={viewMode === 'day' ? goToNextDay : goToNextWeek}
+                disabled={selectedDate >= new Date()}
+              >
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={24} 
+                  color={selectedDate >= new Date() ? '#C7C7CC' : '#007AFF'} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Scrollable Content */}
+          <ScrollView 
+            style={styles.expandedGraphContent}
+            contentContainerStyle={styles.expandedGraphContentContainer}
+          >
             {selectedGraph.type === 'steps' && (
               <>
-                <LineChart
-                  data={stepsChartData}
-                  width={screenWidth - 40}
-                  height={300}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={styles.expandedChart}
-                />
+                {viewMode === 'day' ? (
+                  // Hourly view - horizontally scrollable
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={true}
+                    style={styles.chartScrollContainer}
+                    ref={stepsScrollRef}
+                  >
+                    <LineChart
+                      data={stepsChartData}
+                      width={Math.max(screenWidth - 40, filteredStepsData.length * 60)}
+                      height={300}
+                      chartConfig={chartConfig}
+                      bezier
+                      style={styles.expandedChart}
+                    />
+                  </ScrollView>
+                ) : (
+                  // Weekly view - horizontally scrollable for better label spacing
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={true}
+                    style={styles.chartScrollContainer}
+                  >
+                    <LineChart
+                      data={stepsChartData}
+                      width={Math.max(screenWidth - 40, filteredStepsData.length * 80)}
+                      height={300}
+                      chartConfig={chartConfig}
+                      bezier
+                      style={styles.expandedChart}
+                    />
+                  </ScrollView>
+                )}
                 <View style={styles.detailsSection}>
-                  <Text style={styles.detailsTitle}>Daily Breakdown</Text>
-                  {healthData.steps.map((day, index) => (
+                  <Text style={styles.detailsTitle}>
+                    {viewMode === 'day' ? 'Hourly Breakdown' : 'Daily Breakdown'}
+                  </Text>
+                  {filteredStepsData.map((item, index) => (
                     <View key={index} style={styles.detailRow}>
-                      <Text style={styles.detailDate}>{new Date(day.date).toLocaleDateString()}</Text>
-                      <Text style={styles.detailValue}>{day.steps.toLocaleString()} steps</Text>
+                      <Text style={styles.detailDate}>
+                        {viewMode === 'day' 
+                          ? new Date(item.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                          : new Date(item.date).toLocaleDateString()
+                        }
+                      </Text>
+                      <Text style={styles.detailValue}>{item.steps.toLocaleString()} steps</Text>
                     </View>
                   ))}
-                  <View style={styles.summaryBox}>
-                    <Text style={styles.summaryLabel}>7-Day Average</Text>
-                    <Text style={styles.summaryValue}>
-                      {Math.round(healthData.steps.reduce((sum, d) => sum + d.steps, 0) / healthData.steps.length).toLocaleString()} steps
-                    </Text>
-                  </View>
+                  {filteredStepsData.length > 0 && (
+                    <View style={styles.summaryBox}>
+                      <Text style={styles.summaryLabel}>
+                        {viewMode === 'day' ? 'Total Steps Today' : 'Week Average'}
+                      </Text>
+                      <Text style={styles.summaryValue}>
+                        {viewMode === 'day' 
+                          ? filteredStepsData.reduce((sum, d) => sum + d.steps, 0).toLocaleString()
+                          : Math.round(filteredStepsData.reduce((sum, d) => sum + d.steps, 0) / filteredStepsData.length).toLocaleString()
+                        } steps
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </>
             )}
 
             {selectedGraph.type === 'heartRate' && (
               <>
-                <LineChart
-                  data={heartRateChartData}
-                  width={screenWidth - 40}
-                  height={300}
-                  chartConfig={{
-                    ...chartConfig,
-                    color: (opacity = 1) => `rgba(255, 59, 48, ${opacity})`,
-                  }}
-                  bezier
-                  style={styles.expandedChart}
-                />
+                {/* Horizontally scrollable heart rate chart with wider width */}
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={true}
+                  style={styles.chartScrollContainer}
+                  ref={heartRateScrollRef}
+                >
+                  <LineChart
+                    data={heartRateChartData}
+                    width={Math.max(screenWidth - 40, filteredHeartRateData.length * 80)} 
+                    height={300}
+                    chartConfig={{
+                      ...chartConfig,
+                      color: (opacity = 1) => `rgba(255, 59, 48, ${opacity})`,
+                    }}
+                    bezier
+                    style={styles.expandedChart}
+                  />
+                </ScrollView>
                 <View style={styles.detailsSection}>
-                  <Text style={styles.detailsTitle}>Today's Heart Rate</Text>
-                  <View style={styles.summaryBox}>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Average</Text>
-                      <Text style={styles.summaryValue}>{stats.avgHeartRate} BPM</Text>
+                  <Text style={styles.detailsTitle}>
+                    {viewMode === 'day' ? 'Heart Rate Summary' : 'Weekly Heart Rate'}
+                  </Text>
+                  {filteredHeartRateData.length > 0 && (
+                    <View style={styles.summaryBox}>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Average</Text>
+                        <Text style={styles.summaryValue}>
+                          {Math.round(filteredHeartRateData.reduce((sum, hr) => sum + hr.bpm, 0) / filteredHeartRateData.length)} BPM
+                        </Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Minimum</Text>
+                        <Text style={styles.summaryValue}>
+                          {Math.min(...filteredHeartRateData.map(hr => hr.bpm))} BPM
+                        </Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Maximum</Text>
+                        <Text style={styles.summaryValue}>
+                          {Math.max(...filteredHeartRateData.map(hr => hr.bpm))} BPM
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Minimum</Text>
-                      <Text style={styles.summaryValue}>
-                        {Math.min(...healthData.heartRate.map(hr => hr.bpm))} BPM
-                      </Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Maximum</Text>
-                      <Text style={styles.summaryValue}>
-                        {Math.max(...healthData.heartRate.map(hr => hr.bpm))} BPM
-                      </Text>
-                    </View>
-                  </View>
+                  )}
+                  {filteredHeartRateData.length === 0 && (
+                    <Text style={styles.noDataText}>No heart rate data for this period</Text>
+                  )}
                 </View>
               </>
             )}
 
-            {selectedGraph.type === 'calories' && workouts.length > 0 && (
+            {selectedGraph.type === 'calories' && filteredWorkoutsData.length > 0 && (
               <>
                 <BarChart
                   data={caloriesChartData}
@@ -225,8 +512,10 @@ const StatsScreen = () => {
                   showValuesOnTopOfBars
                 />
                 <View style={styles.detailsSection}>
-                  <Text style={styles.detailsTitle}>Recent Workouts</Text>
-                  {workouts.slice(0, 10).map((workout, index) => (
+                  <Text style={styles.detailsTitle}>
+                    {viewMode === 'day' ? 'Workouts This Day' : 'Workouts This Week'}
+                  </Text>
+                  {filteredWorkoutsData.slice(0, 10).map((workout, index) => (
                     <View key={workout.id} style={styles.detailRow}>
                       <View>
                         <Text style={styles.detailType}>{workout.type}</Text>
@@ -237,11 +526,25 @@ const StatsScreen = () => {
                       <Text style={styles.detailValue}>{workout.calories} kcal</Text>
                     </View>
                   ))}
+                  {filteredWorkoutsData.length > 0 && (
+                    <View style={styles.summaryBox}>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Total Calories</Text>
+                        <Text style={styles.summaryValue}>
+                          {filteredWorkoutsData.reduce((sum, w) => sum + w.calories, 0)} kcal
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </>
             )}
+            {selectedGraph.type === 'calories' && filteredWorkoutsData.length === 0 && (
+              <View style={styles.detailsSection}>
+                <Text style={styles.noDataText}>No workouts for this period</Text>
+              </View>
+            )}
           </ScrollView>
-        </Animated.View>
         </SafeAreaView>
       </Modal>
     );
@@ -293,7 +596,7 @@ const StatsScreen = () => {
           style={styles.actionButton}
           onPress={() => setShowAddDataModal(true)}
         >
-          <Ionicons name="add-circle" size={24} color="#007AFF" />
+          <Ionicons name="add-circle" size={24} color="#5856D6" />
           <Text style={styles.actionButtonText}>Add Data</Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -310,17 +613,17 @@ const StatsScreen = () => {
         <Text style={styles.sectionTitle}>Today's Summary</Text>
         <View style={styles.summaryGrid}>
           <View style={styles.summaryCard}>
-            <Ionicons name="walk" size={32} color="#34C759" />
+            <Ionicons name="walk" size={32} color="#007AFF" />
             <Text style={styles.summaryCardValue}>{stats.todaySteps.toLocaleString()}</Text>
             <Text style={styles.summaryCardLabel}>Steps</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Ionicons name="heart" size={32} color="#FF3B30" />
+            <Ionicons name="heart" size={32} color="#FF2D55" />
             <Text style={styles.summaryCardValue}>{stats.avgHeartRate}</Text>
             <Text style={styles.summaryCardLabel}>Avg BPM</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Ionicons name="flame" size={32} color="#FF6B35" />
+            <Ionicons name="flame" size={32} color="#FF9500" />
             <Text style={styles.summaryCardValue}>{stats.totalCalories}</Text>
             <Text style={styles.summaryCardLabel}>Calories</Text>
           </View>
@@ -330,7 +633,7 @@ const StatsScreen = () => {
       {/* Steps Chart */}
       <View style={styles.section}>
         <View style={styles.chartHeader}>
-          <Text style={styles.sectionTitle}>Steps (7 Days)</Text>
+          <Text style={styles.sectionTitle}>Steps</Text>
           <TouchableOpacity 
             onPress={() => setSelectedGraph({ type: 'steps', title: 'Steps Analysis' })}
           >
@@ -342,7 +645,7 @@ const StatsScreen = () => {
           activeOpacity={0.8}
         >
           <LineChart
-            data={stepsChartData}
+            data={mainStepsChartData}
             width={screenWidth - 40}
             height={220}
             chartConfig={chartConfig}
@@ -355,7 +658,7 @@ const StatsScreen = () => {
       {/* Heart Rate Chart */}
       <View style={styles.section}>
         <View style={styles.chartHeader}>
-          <Text style={styles.sectionTitle}>Heart Rate (Today)</Text>
+          <Text style={styles.sectionTitle}>Heart Rate</Text>
           <TouchableOpacity 
             onPress={() => setSelectedGraph({ type: 'heartRate', title: 'Heart Rate Analysis' })}
           >
@@ -367,16 +670,25 @@ const StatsScreen = () => {
           activeOpacity={0.8}
         >
           <LineChart
-            data={heartRateChartData}
+            data={mainHeartRateChartData}
             width={screenWidth - 40}
             height={220}
             chartConfig={{
-              ...chartConfig,
-              color: (opacity = 1) => `rgba(255, 59, 48, ${opacity})`,
-            }}
-            bezier
-            style={styles.chart}
-          />
+                ...chartConfig,
+                color: (opacity = 1) => `rgba(255, 45, 85, ${opacity})`, // iOS pink
+                propsForDots: {
+                  r: '5',
+                  strokeWidth: '2',
+                  stroke: 'rgba(255, 45, 85, 1)',
+                  fill: '#FFFFFF',
+                },
+              }}
+              bezier
+              style={styles.chart}
+              withHorizontalLabels={true}
+              withVerticalLabels={true}
+              fromZero={false}
+            />
         </TouchableOpacity>
       </View>
 
@@ -401,7 +713,7 @@ const StatsScreen = () => {
               height={220}
               chartConfig={{
                 ...chartConfig,
-                color: (opacity = 1) => `rgba(255, 107, 53, ${opacity})`,
+                color: (opacity = 1) => `rgba(255, 149, 0, ${opacity})`, // iOS orange
               }}
               style={styles.chart}
               showValuesOnTopOfBars
@@ -418,21 +730,21 @@ const StatsScreen = () => {
           title="Total Calories Burned"
           value={stats.totalCalories}
           unit="kcal"
-          color="#FF6B35"
+          color="#FF9500"
         />
         <StatCard
           icon="time"
           title="Total Workout Time"
           value={stats.totalDuration}
           unit="min"
-          color="#007AFF"
+          color="#5856D6"
         />
         <StatCard
           icon="fitness"
           title="Total Workouts"
           value={stats.totalWorkouts}
           unit="sessions"
-          color="#34C759"
+          color="#007AFF"
         />
       </View>
 
@@ -568,7 +880,7 @@ const StatsScreen = () => {
                       style={styles.resetDateButton}
                       onPress={() => setDataDate(new Date())}
                     >
-                      <Ionicons name="refresh" size={16} color={COLORS.primary} />
+                      <Ionicons name="refresh" size={16} color="#007AFF" />
                       <Text style={styles.resetDateText}>Reset to Now</Text>
                     </TouchableOpacity>
                   </View>
@@ -590,7 +902,7 @@ const StatsScreen = () => {
                     style={styles.hideKeyboardButton}
                     onPress={Keyboard.dismiss}
                   >
-                    <Ionicons name="chevron-down" size={20} color={COLORS.primary} />
+                    <Ionicons name="chevron-down" size={20} color="#007AFF" />
                     <Text style={styles.hideKeyboardText}>Hide Keyboard</Text>
                   </TouchableOpacity>
 
@@ -708,12 +1020,15 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: '#3C3C43',
     marginLeft: 8,
   },
   section: {
     paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  chartScrollView: {
+    marginVertical: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -797,21 +1112,92 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  expandedGraphHeader: {
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    paddingTop: 60, // Add significant top padding to clear dynamic island
+  },
+  fixedModalHeader: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    position: 'relative',
   },
   expandedGraphTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.3,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    backgroundColor: 'transparent',
+    borderRadius: 22,
+  },
+  datePickerContainer: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  viewModeToggle: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 16,
+  },
+  viewModeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  viewModeButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  viewModeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  viewModeTextActive: {
+    color: '#FFFFFF',
+  },
+  dateNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateNavButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  chartScrollContainer: {
+    marginVertical: 8,
   },
   floatingCloseButton: {
     position: 'absolute',
@@ -855,6 +1241,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 16,
     letterSpacing: -0.3,
+  },
+  noDataText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+    fontStyle: 'italic',
   },
   detailRow: {
     flexDirection: 'row',
@@ -1068,7 +1461,7 @@ const styles = StyleSheet.create({
   },
   resetDateText: {
     fontSize: 14,
-    color: COLORS.primary,
+    color: '#007AFF',
     fontWeight: '600',
   },
   previewBox: {
@@ -1110,7 +1503,7 @@ const styles = StyleSheet.create({
   },
   hideKeyboardText: {
     fontSize: 16,
-    color: COLORS.primary,
+    color: '#007AFF',
     fontWeight: '600',
   },
 });
