@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useWorkouts } from '../context/WorkoutContext';
 import StatCard from '../components/StatCard';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
   const { getTotalStats } = useWorkouts();
   const stats = getTotalStats();
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome to Fitness Tracker</Text>
-        <Text style={styles.subtitle}>Track your daily fitness activities</Text>
+      <View style={styles.welcomeSection}>
+        <Text style={styles.title}>Fitness Summary</Text>
+        <Text style={styles.subtitle}>Your daily activity overview</Text>
       </View>
 
       <View style={styles.statsContainer}>
@@ -60,20 +60,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F7',
   },
-  header: {
-    padding: 20,
+  welcomeSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
     backgroundColor: '#fff',
     marginBottom: 16,
+    marginTop: 0,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#86868B',
   },
   statsContainer: {
     paddingHorizontal: 20,

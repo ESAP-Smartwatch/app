@@ -4,21 +4,37 @@
     "slug": "fitness-tracker-app",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/appicon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#007AFF"
-    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fitnesstracker.app",
+      "buildNumber": "1",
+      "icon": "./assets/appicon.png",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app needs Bluetooth to connect to your fitness tracking devices.",
-        "NSBluetoothPeripheralUsageDescription": "This app needs Bluetooth to connect to your fitness tracking devices."
+        "NSBluetoothPeripheralUsageDescription": "This app needs Bluetooth to connect to your fitness tracking devices.",
+        "NSHealthShareUsageDescription": "This app needs access to your health data to track your fitness activities.",
+        "NSHealthUpdateUsageDescription": "This app needs to update your health data with workout information.",
+        "NSMotionUsageDescription": "This app uses motion data to track your activities.",
+        "UIBackgroundModes": ["bluetooth-central"]
+      },
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.fitnesstracker.app",
+      "versionCode": 1,
+      "icon": "./assets/appicon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/appicon.png",
+        "backgroundColor": "#007AFF"
+      },
       "permissions": [
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
@@ -28,6 +44,7 @@
       ]
     },
     "plugins": [
+      "expo-dev-client",
       [
         "react-native-ble-plx",
         {
@@ -39,6 +56,11 @@
           "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to bluetooth devices"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    }
   }
 }
