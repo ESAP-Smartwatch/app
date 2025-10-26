@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import COLORS from '../theme/colors';
 
 const Button = ({ title, onPress, style, textStyle, disabled = false }) => {
   return (
@@ -16,25 +17,26 @@ const Button = ({ title, onPress, style, textStyle, disabled = false }) => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   text: {
-    color: '#fff',
+    color: COLORS.surface,
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: -0.3,
   },
   disabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: COLORS.textTertiary,
     opacity: 0.6,
   },
 });

@@ -11,10 +11,34 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fitnesstracker.app"
+      "bundleIdentifier": "com.fitnesstracker.app",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app needs Bluetooth to connect to your fitness tracking devices.",
+        "NSBluetoothPeripheralUsageDescription": "This app needs Bluetooth to connect to your fitness tracking devices."
+      }
     },
     "android": {
-      "package": "com.fitnesstracker.app"
-    }
+      "package": "com.fitnesstracker.app",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to bluetooth devices"
+        }
+      ]
+    ]
   }
 }
