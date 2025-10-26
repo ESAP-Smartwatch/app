@@ -20,6 +20,8 @@ const BluetoothScreen = () => {
     isScanning,
     isBluetoothEnabled,
     accelerometerData,
+    heartRateData,
+    isSimulatingData,
     bleNotAvailable,
     scanForDevices,
     stopScan,
@@ -134,10 +136,22 @@ const BluetoothScreen = () => {
                   </View>
                   <View style={styles.deviceInfo}>
                     <Text style={styles.deviceName}>{connectedDevice.name}</Text>
-                    <Text style={styles.deviceStatus}>Connected & Receiving Data</Text>
+                    <Text style={styles.deviceStatus}>
+                      {isSimulatingData ? 'Connected • Simulated Data' : 'Connected & Receiving Data'}
+                    </Text>
                   </View>
                   <View style={styles.statusIndicator}>
                     <View style={styles.connectedDot} />
+                  </View>
+                </View>
+
+                {/* Heart Rate Display */}
+                <View style={styles.dataSection}>
+                  <Text style={styles.dataTitle}>Heart Rate</Text>
+                  <View style={styles.heartRateContainer}>
+                    <Ionicons name="heart" size={32} color="#FF3B30" />
+                    <Text style={styles.heartRateValue}>{Math.round(heartRateData)}</Text>
+                    <Text style={styles.heartRateUnit}>BPM</Text>
                   </View>
                 </View>
 
@@ -524,6 +538,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 2,
+  },
+  heartRateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  heartRateValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    marginHorizontal: 12,
+  },
+  heartRateUnit: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
   disconnectButton: {
     marginTop: 16,

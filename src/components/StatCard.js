@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import COLORS from '../theme/colors';
 
-const StatCard = ({ icon, title, value, unit, color = '#007AFF' }) => {
+const StatCard = ({ icon, title, value, unit, color = COLORS.primary }) => {
   return (
     <View style={[styles.card, { borderLeftColor: color }]}>
       <View style={styles.iconContainer}>
@@ -21,16 +22,16 @@ const StatCard = ({ icon, title, value, unit, color = '#007AFF' }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
     padding: 16,
     marginVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadowColor,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
     borderLeftWidth: 4,
   },
@@ -42,8 +43,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 4,
+    fontWeight: '500',
   },
   valueContainer: {
     flexDirection: 'row',
@@ -51,12 +53,14 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -0.5,
   },
   unit: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
 });
 
