@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useWorkouts } from '../context/WorkoutContext';
+import { useWiFiHealth } from '../context/WiFiHealthContext';
 import StatCard from '../components/StatCard';
 
 const HomeScreen = ({ navigation }) => {
   const { getTotalStats } = useWorkouts();
   const stats = getTotalStats();
+  const { isConnected, heartRate, lastUpdate } = useWiFiHealth();
 
   return (
     <ScrollView style={styles.container}>
@@ -13,6 +16,33 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.title}>Fitness Summary</Text>
         <Text style={styles.subtitle}>Your daily activity overview</Text>
       </View>
+
+      {isConnected && heartRate && (
+        <View style={styles.heartRateWidget}>
+          <View style={styles.heartRateHeader}>
+            <View style={styles.heartRateIconContainer}>
+              <Ionicons name="heart" size={24} color="#FF3B30" />
+            </View>
+            <View style={styles.heartRateInfo}>
+              <Text style={styles.heartRateLabel}>Current Heart Rate</Text>
+              <Text style={styles.heartRateSubtitle}>Live from ESP32C3</Text>
+            </View>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
+          <View style={styles.heartRateDisplay}>
+            <Text style={styles.heartRateValue}>{heartRate}</Text>
+            <Text style={styles.heartRateUnit}>BPM</Text>
+          </View>
+          {lastUpdate && (
+            <Text style={styles.lastUpdateText}>
+              Updated {lastUpdate.toLocaleTimeString()}
+            </Text>
+          )}
+        </View>
+      )}
 
       <View style={styles.statsContainer}>
         <StatCard
@@ -77,6 +107,91 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: '#86868B',
+  },
+  heartRateWidget: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF3B30',
+  },
+  heartRateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  heartRateIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  heartRateInfo: {
+    flex: 1,
+  },
+  heartRateLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 2,
+  },
+  heartRateSubtitle: {
+    fontSize: 12,
+    color: '#86868B',
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF3B30',
+    marginRight: 4,
+  },
+  liveText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FF3B30',
+    letterSpacing: 0.5,
+  },
+  heartRateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  heartRateValue: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#FF3B30',
+  },
+  heartRateUnit: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#86868B',
+    marginLeft: 8,
+  },
+  lastUpdateText: {
+    fontSize: 11,
+    color: '#86868B',
+    textAlign: 'center',
+    marginTop: 4,
   },
   statsContainer: {
     paddingHorizontal: 20,

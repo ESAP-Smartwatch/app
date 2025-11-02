@@ -67,6 +67,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { WorkoutProvider } from './src/context/WorkoutContext';
 import { BluetoothProvider } from './src/context/BluetoothContext';
+import { WiFiHealthProvider } from './src/context/WiFiHealthContext';
 import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
 import StatsScreen from './src/screens/StatsScreen';
@@ -295,19 +296,20 @@ export default function App() {
   return (
     <WorkoutProvider>
       <BluetoothProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: COLORS.surface,
-                height: Platform.OS === 'ios' ? 100 : 70,
-              },
-              headerTintColor: COLORS.text,
-              headerTitleStyle: {
-                fontWeight: '700',
-                fontSize: 17,
-              },
-              headerTitleAlign: 'center',
+        <WiFiHealthProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: COLORS.surface,
+                  height: Platform.OS === 'ios' ? 100 : 70,
+                },
+                headerTintColor: COLORS.text,
+                headerTitleStyle: {
+                  fontWeight: '700',
+                  fontSize: 17,
+                },
+                headerTitleAlign: 'center',
               headerBackTitleVisible: false,
               headerLeftContainerStyle: {
                 paddingLeft: 16,
@@ -380,6 +382,7 @@ export default function App() {
             />
           </Stack.Navigator>
         </NavigationContainer>
+        </WiFiHealthProvider>
       </BluetoothProvider>
     </WorkoutProvider>
   );
