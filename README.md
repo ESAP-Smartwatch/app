@@ -1,5 +1,8 @@
 # Smartwatch Health Tracking App
 
+### Warning (11/1/2025):
+Developers building for the iOS platform must open `.xcworkspace` instead of `.xcodeproj` (which will cause library linking errors).
+
 This app syncs with the open-source smartwatch, scanning for Bluetooth signals and attempting to pair and obtain a UTF-8 encoded file with heart rate and movement data, along with the UUID identifier for persistent sync. Built by the 2025 Embedded Systems @ Purdue Smartwatch Team.
 
 ## Getting Started
