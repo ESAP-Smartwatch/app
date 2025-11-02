@@ -68,6 +68,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { WorkoutProvider } from './src/context/WorkoutContext';
 import { BluetoothProvider } from './src/context/BluetoothContext';
 import { WiFiHealthProvider } from './src/context/WiFiHealthContext';
+import { UserProfileProvider } from './src/context/UserProfileContext';
+import { CalorieHistoryProvider } from './src/context/CalorieHistoryContext';
 import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
 import StatsScreen from './src/screens/StatsScreen';
@@ -79,6 +81,9 @@ import UnitsScreen from './src/screens/UnitsScreen';
 import HeartRateZonesScreen from './src/screens/HeartRateZonesScreen';
 import GoalSettingsScreen from './src/screens/GoalSettingsScreen';
 import HelpSupportScreen from './src/screens/HelpSupportScreen';
+import UserProfileScreen from './src/screens/UserProfileScreen';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { getDefaultScreenOptions, noHeaderOptions, modalOptions } from './src/utils/navigationConfig';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -294,46 +299,27 @@ function MainTabs({ navigation }) {
 
 export default function App() {
   return (
-    <WorkoutProvider>
-      <BluetoothProvider>
-        <WiFiHealthProvider>
-          <NavigationContainer>
+    <ErrorBoundary>
+      <WorkoutProvider>
+        <BluetoothProvider>
+          <UserProfileProvider>
+            <CalorieHistoryProvider>
+              <WiFiHealthProvider>
+                <NavigationContainer>
             <Stack.Navigator
-              screenOptions={{
-                headerStyle: {
-                  backgroundColor: COLORS.surface,
-                  height: Platform.OS === 'ios' ? 100 : 70,
-                },
-                headerTintColor: COLORS.text,
-                headerTitleStyle: {
-                  fontWeight: '700',
-                  fontSize: 17,
-                },
-                headerTitleAlign: 'center',
-              headerBackTitleVisible: false,
-              headerLeftContainerStyle: {
-                paddingLeft: 16,
-                paddingTop: Platform.OS === 'ios' ? 12 : 3,
-                paddingBottom: 3,
-              },
-              headerRightContainerStyle: {
-                paddingRight: 16,
-                paddingTop: Platform.OS === 'ios' ? 12 : 3,
-                paddingBottom: 3,
-              },
-            }}
-          >
+              screenOptions={getDefaultScreenOptions()}
+            >
             <Stack.Screen 
               name="MainTabs" 
               component={MainTabs}
-              options={{ headerShown: false }}
+              options={noHeaderOptions}
             />
             <Stack.Screen 
               name="Account" 
               component={AccountScreen}
               options={{ 
+                ...modalOptions,
                 title: 'Account',
-                presentation: 'modal',
               }}
             />
             <Stack.Screen 
@@ -349,7 +335,6 @@ export default function App() {
               component={UnitsScreen}
               options={{ 
                 title: 'Units',
-                headerShown: false,
                 animation: 'slide_from_right',
               }}
             />
@@ -358,7 +343,6 @@ export default function App() {
               component={HeartRateZonesScreen}
               options={{ 
                 title: 'Heart Rate Zones',
-                headerShown: false,
                 animation: 'slide_from_right',
               }}
             />
@@ -367,7 +351,6 @@ export default function App() {
               component={GoalSettingsScreen}
               options={{ 
                 title: 'Goal Settings',
-                headerShown: false,
                 animation: 'slide_from_right',
               }}
             />
@@ -376,15 +359,25 @@ export default function App() {
               component={HelpSupportScreen}
               options={{ 
                 title: 'Help & Support',
-                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen 
+              name="UserProfile" 
+              component={UserProfileScreen}
+              options={{ 
+                title: 'User Profile',
                 animation: 'slide_from_right',
               }}
             />
           </Stack.Navigator>
         </NavigationContainer>
-        </WiFiHealthProvider>
+            </WiFiHealthProvider>
+          </CalorieHistoryProvider>
+        </UserProfileProvider>
       </BluetoothProvider>
     </WorkoutProvider>
+    </ErrorBoundary>
   );
 }
 

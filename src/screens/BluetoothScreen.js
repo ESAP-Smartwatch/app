@@ -12,9 +12,34 @@ import Button from '../components/Button';
 import { useWiFiHealth } from '../context/WiFiHealthContext';
 
 const BluetoothScreen = () => {
-  const { isConnected, heartRate, spo2, lastUpdate, connect, disconnect } = useWiFiHealth();
+  const { 
+    isConnected, 
+    heartRate, 
+    spo2, 
+    lis3dh, 
+    steps, 
+    lastUpdate, 
+    connect, 
+    disconnect 
+  } = useWiFiHealth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+
+  // Parse accelerometer data
+  const parseAccelerometer = (lis3dhString) => {
+    if (!lis3dhString) return { x: 0, y: 0, z: 0 };
+    const match = lis3dhString.match(/X:(-?\d+)\s+Y:(-?\d+)\s+Z:(-?\d+)/);
+    if (match) {
+      return {
+        x: parseInt(match[1]),
+        y: parseInt(match[2]),
+        z: parseInt(match[3])
+      };
+    }
+    return { x: 0, y: 0, z: 0 };
+  };
+
+  const accelData = parseAccelerometer(lis3dh);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -121,6 +146,39 @@ const BluetoothScreen = () => {
                 <Ionicons name="water" size={32} color="#007AFF" />
                 <Text style={styles.spo2Value}>{spo2 ?? '--'}</Text>
                 <Text style={styles.spo2Unit}>%</Text>
+              </View>
+            </View>
+
+            <View style={styles.dataSection}>
+              <Text style={styles.dataTitle}>Step Count</Text>
+              <View style={styles.stepsContainer}>
+                <Ionicons name="footsteps" size={32} color="#34C759" />
+                <Text style={styles.stepsValue}>{steps ?? '--'}</Text>
+                <Text style={styles.stepsUnit}>steps</Text>
+              </View>
+            </View>
+
+            <View style={styles.dataSection}>
+              <Text style={styles.dataTitle}>Accelerometer (LIS3DH)</Text>
+              <View style={styles.accelerometerGrid}>
+                <View style={styles.accelItem}>
+                  <Text style={styles.accelLabel}>X-Axis</Text>
+                  <Text style={styles.accelValue}>{accelData.x}</Text>
+                </View>
+                <View style={styles.accelItem}>
+                  <Text style={styles.accelLabel}>Y-Axis</Text>
+                  <Text style={styles.accelValue}>{accelData.y}</Text>
+                </View>
+                <View style={styles.accelItem}>
+                  <Text style={styles.accelLabel}>Z-Axis</Text>
+                  <Text style={styles.accelValue}>{accelData.z}</Text>
+                </View>
+              </View>
+              <View style={styles.magnitudeContainer}>
+                <Text style={styles.magnitudeLabel}>Magnitude:</Text>
+                <Text style={styles.magnitudeValue}>
+                  {Math.round(Math.sqrt(accelData.x ** 2 + accelData.y ** 2 + accelData.z ** 2))}
+                </Text>
               </View>
             </View>
 
@@ -380,6 +438,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  stepsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  stepsValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#34C759',
+    marginHorizontal: 12,
+  },
+  stepsUnit: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  accelerometerGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  accelItem: {
+    alignItems: 'center',
+  },
+  accelLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  accelValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  magnitudeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  magnitudeLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 8,
+  },
+  magnitudeValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF9500',
   },
   lastUpdateContainer: {
     flexDirection: 'row',

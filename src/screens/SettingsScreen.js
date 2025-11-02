@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, useColorScheme, Appearance } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CONTENT_PADDING, CARD_MARGIN, getContainerStyle, getResponsiveFontSize } from '../utils/responsive';
 
 const SettingsScreen = ({ navigation }) => {
   const colorScheme = useColorScheme();
@@ -95,6 +96,20 @@ const SettingsScreen = ({ navigation }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Health Data</Text>
         
+        <TouchableOpacity 
+          style={styles.settingRow}
+          onPress={() => navigation.navigate('UserProfile')}
+        >
+          <View style={styles.settingLeft}>
+            <Ionicons name="person" size={24} color="#007AFF" style={styles.settingIcon} />
+            <View style={styles.settingText}>
+              <Text style={styles.settingTitle}>User Profile</Text>
+              <Text style={styles.settingSubtitle}>Age, weight, gender, VO2 max</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+        </TouchableOpacity>
+
         <TouchableOpacity 
           style={styles.settingRow}
           onPress={() => navigation.navigate('Units')}
@@ -208,28 +223,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: CONTENT_PADDING.horizontal,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: CONTENT_PADDING.vertical,
     backgroundColor: '#FFFFFF',
+    ...getContainerStyle(),
   },
   headerTitle: {
-    fontSize: 34,
+    fontSize: getResponsiveFontSize(34),
     fontWeight: '700',
     color: '#1D1D1F',
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: getResponsiveFontSize(16),
     color: '#86868B',
     marginTop: 4,
   },
   section: {
-    marginTop: 20,
+    marginTop: CARD_MARGIN,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 16,
+    marginHorizontal: CARD_MARGIN,
     overflow: 'hidden',
+    ...getContainerStyle(),
   },
   sectionTitle: {
     fontSize: 13,

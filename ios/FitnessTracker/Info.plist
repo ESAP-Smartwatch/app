@@ -62,6 +62,10 @@
     <string>This app needs to update your health data with workout information.</string>
     <key>NSMotionUsageDescription</key>
     <string>This app uses motion data to track your activities.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app uses local network to connect to your fitness tracking devices over WiFi.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs location permission to scan for WiFi devices.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UIBackgroundModes</key>

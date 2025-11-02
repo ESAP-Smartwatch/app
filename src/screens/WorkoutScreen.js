@@ -11,34 +11,107 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { useWorkouts } from '../context/WorkoutContext';
+import { useUserProfile } from '../context/UserProfileContext';
+import { useCalorieHistory } from '../context/CalorieHistoryContext';
+import { useWiFiHealth } from '../context/WiFiHealthContext';
 import WorkoutItem from '../components/WorkoutItem';
 import Button from '../components/Button';
 import { Ionicons } from '@expo/vector-icons';
 
 const WorkoutScreen = () => {
   const { workouts, addWorkout, deleteWorkout } = useWorkouts();
+  const { profile, calculateCaloriesBurned } = useUserProfile();
+  const { addCalorieEntry } = useCalorieHistory();
+  const { heartRate } = useWiFiHealth();
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState('Running');
   const [duration, setDuration] = useState('');
   const [calories, setCalories] = useState('');
   const [workoutDate, setWorkoutDate] = useState(new Date());
+  const [autoCalculateCalories, setAutoCalculateCalories] = useState(true);
 
   const workoutTypes = ['Running', 'Cycling', 'Swimming', 'Gym', 'Yoga', 'Walking'];
 
-  const handleAddWorkout = () => {
-    if (duration && calories) {
+  // Auto-calculate calories when duration changes
+  const handleDurationChange = (value) => {
+    // Sanitize input - only allow numbers
+    const sanitized = value.replace(/[^0-9]/g, '');
+    setDuration(sanitized);
+    
+    if (autoCalculateCalories && sanitized && profile.age && profile.weight) {
+      const durationNum = parseInt(sanitized);
+      if (durationNum > 0) {
+        // Use current heart rate if available, otherwise estimate based on activity
+        const estimatedHR = heartRate || getEstimatedHeartRate(selectedType);
+        const calculatedCalories = calculateCaloriesBurned(durationNum, estimatedHR);
+        setCalories(Math.round(calculatedCalories).toString());
+      }
+    }
+  };
+
+  // Estimate heart rate based on workout type
+  const getEstimatedHeartRate = (type) => {
+    const estimates = {
+      'Running': 145,
+      'Cycling': 130,
+      'Swimming': 135,
+      'Gym': 125,
+      'Yoga': 90,
+      'Walking': 100,
+    };
+    return estimates[type] || 120;
+  };
+
+  const handleAddWorkout = async () => {
+    try {
+      const durationNum = parseInt(duration);
+      const caloriesNum = parseInt(calories);
+      
+      // Validation
+      if (!duration || !calories) {
+        Alert.alert('Missing Information', 'Please enter both duration and calories.');
+        return;
+      }
+      
+      if (isNaN(durationNum) || durationNum <= 0) {
+        Alert.alert('Invalid Duration', 'Please enter a valid duration greater than 0.');
+        return;
+      }
+      
+      if (isNaN(caloriesNum) || caloriesNum <= 0) {
+        Alert.alert('Invalid Calories', 'Please enter a valid calorie amount greater than 0.');
+        return;
+      }
+      
       addWorkout({
         type: selectedType,
-        duration: parseInt(duration),
-        calories: parseInt(calories),
+        duration: durationNum,
+        calories: caloriesNum,
         date: workoutDate.toISOString(),
       });
+
+      // Save to calorie history
+      await addCalorieEntry({
+        calories: caloriesNum,
+        source: 'workout',
+        heartRate: heartRate || getEstimatedHeartRate(selectedType),
+        duration: durationNum,
+        metadata: {
+          workoutType: selectedType,
+        },
+      });
+
       setDuration('');
       setCalories('');
       setWorkoutDate(new Date());
       setModalVisible(false);
+    } catch (error) {
+      console.error('Error adding workout:', error);
+      Alert.alert('Error', 'Failed to save workout. Please try again.');
     }
   };
 
@@ -132,7 +205,7 @@ const WorkoutScreen = () => {
                       placeholderTextColor="#999"
                       keyboardType="numeric"
                       value={duration}
-                      onChangeText={setDuration}
+                      onChangeText={handleDurationChange}
                       returnKeyType="next"
                       onSubmitEditing={() => Keyboard.dismiss()}
                     />
@@ -143,14 +216,40 @@ const WorkoutScreen = () => {
                       </View>
                     )}
 
-                    <Text style={styles.label}>Calories Burned</Text>
+                    <View style={styles.labelWithToggle}>
+                      <Text style={styles.label}>Calories Burned</Text>
+                      {profile.age && profile.weight && (
+                        <TouchableOpacity
+                          style={styles.autoCalcToggle}
+                          onPress={() => {
+                            setAutoCalculateCalories(!autoCalculateCalories);
+                            if (!autoCalculateCalories && duration) {
+                              handleDurationChange(duration);
+                            }
+                          }}
+                        >
+                          <Ionicons 
+                            name={autoCalculateCalories ? "calculator" : "pencil"} 
+                            size={14} 
+                            color="#007AFF" 
+                          />
+                          <Text style={styles.autoCalcText}>
+                            {autoCalculateCalories ? "Auto" : "Manual"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <TextInput
                       style={styles.input}
                       placeholder="250"
                       placeholderTextColor="#999"
                       keyboardType="numeric"
                       value={calories}
-                      onChangeText={setCalories}
+                      onChangeText={(value) => {
+                        // Sanitize input - only allow numbers
+                        const sanitized = value.replace(/[^0-9]/g, '');
+                        setCalories(sanitized);
+                      }}
                       returnKeyType="done"
                       onSubmitEditing={Keyboard.dismiss}
                     />
@@ -338,6 +437,27 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
     marginTop: 12,
+  },
+  labelWithToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  autoCalcToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  autoCalcText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600',
   },
   typesContainer: {
     flexDirection: 'row',

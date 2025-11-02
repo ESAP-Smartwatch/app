@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import COLORS from '../theme/colors';
 
@@ -23,18 +22,7 @@ const HeartRateZonesScreen = ({ navigation }) => {
   const zones = calculateZones();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <View style={styles.backButtonCircle}>
-            <Ionicons name="chevron-back" size={24} color="#007AFF" />
-          </View>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Heart Rate Zones</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <ScrollView style={styles.content}>
+    <ScrollView style={styles.container}>
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Customize Your Zones</Text>
           <Text style={styles.infoText}>
@@ -99,7 +87,6 @@ const HeartRateZonesScreen = ({ navigation }) => {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
   );
 };
 
@@ -107,42 +94,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 12,
-    paddingTop: Platform.OS === 'ios' ? 12 : 3,
-    paddingBottom: 3,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    minHeight: Platform.OS === 'ios' ? 100 : 70,
-  },
-  backButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerSpacer: {
-    width: 36,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  content: {
-    flex: 1,
+    paddingTop: 20,
   },
   infoCard: {
     backgroundColor: '#007AFF',
