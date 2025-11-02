@@ -17,9 +17,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useWorkouts } from '../context/WorkoutContext';
+import { useWiFiHealth } from '../context/WiFiHealthContext';
+import { useCalorieHistory } from '../context/CalorieHistoryContext';
 import { Ionicons } from '@expo/vector-icons';
 import StatCard from '../components/StatCard';
 import Button from '../components/Button';
+import LineChartComponent from '../components/LineChart';
+import CalorieBarChart from '../components/CalorieBarChart';
 import COLORS from '../theme/colors';
 
 const screenWidth = Dimensions.get('window').width;
@@ -27,6 +31,21 @@ const screenWidth = Dimensions.get('window').width;
 const StatsScreen = () => {
   const { workouts, healthData, getTotalStats, addHealthMetric, deleteWorkout } = useWorkouts();
   const stats = getTotalStats();
+  
+  // WiFi Health Data
+  const {
+    isConnected,
+    heartRate,
+    spo2,
+    lis3dh,
+    steps,
+    heartRateHistory,
+    spo2History,
+    stepsHistory,
+  } = useWiFiHealth();
+
+  // Calorie History
+  const { getDailyCaloriesForWeek, getDailyCaloriesForMonth, getTodayCalories } = useCalorieHistory();
   
   const [selectedGraph, setSelectedGraph] = useState(null);
   const [showAddDataModal, setShowAddDataModal] = useState(false);
@@ -36,6 +55,12 @@ const StatsScreen = () => {
   const [showManageModal, setShowManageModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('day'); // 'day' or 'week'
+  
+  // Calorie chart state
+  const [caloriePeriod, setCaloriePeriod] = useState('week'); // 'week' or 'month'
+  const [calorieData, setCalorieData] = useState([]);
+  const [calorieWeekOffset, setCalorieWeekOffset] = useState(0);
+  const [todayCalories, setTodayCalories] = useState(0);
 
   // Refs for scrolling to the right (most recent data)
   const stepsScrollRef = useRef(null);
@@ -54,6 +79,32 @@ const StatsScreen = () => {
       }, 100);
     }
   }, [selectedGraph, selectedDate, viewMode]);
+
+  // Load calorie data
+  useEffect(() => {
+    const loadCalorieData = async () => {
+      try {
+        // Load today's calories
+        const today = await getTodayCalories();
+        setTodayCalories(today || 0);
+
+        // Load week or month data
+        if (caloriePeriod === 'week') {
+          const weekData = await getDailyCaloriesForWeek(calorieWeekOffset);
+          setCalorieData(Array.isArray(weekData) ? weekData : []);
+        } else {
+          const monthData = await getDailyCaloriesForMonth(calorieWeekOffset);
+          setCalorieData(Array.isArray(monthData) ? monthData : []);
+        }
+      } catch (error) {
+        console.error('Error loading calorie data:', error);
+        setTodayCalories(0);
+        setCalorieData([]);
+      }
+    };
+
+    loadCalorieData();
+  }, [caloriePeriod, calorieWeekOffset, getTodayCalories, getDailyCaloriesForWeek, getDailyCaloriesForMonth]);
 
   // Helper function to filter data based on selected date and view mode
   const getFilteredStepsData = () => {
@@ -590,6 +641,82 @@ const StatsScreen = () => {
         <Text style={styles.headerSubtitle}>Your wellness at a glance</Text>
       </View>
 
+      {/* Live WiFi Health Data Section */}
+      {isConnected && (
+        <View style={styles.liveDataSection}>
+          <View style={styles.liveDataHeader}>
+            <Text style={styles.liveDataTitle}>Live Health Monitoring</Text>
+            <View style={styles.liveIndicatorBadge}>
+              <View style={styles.liveDotPulse} />
+              <Text style={styles.liveTextBadge}>LIVE</Text>
+            </View>
+          </View>
+
+          {/* Current Values Grid */}
+          <View style={styles.liveValuesGrid}>
+            <View style={styles.liveValueCard}>
+              <Ionicons name="heart" size={24} color="#FF3B30" />
+              <Text style={styles.liveValue}>{heartRate ?? '--'}</Text>
+              <Text style={styles.liveValueLabel}>BPM</Text>
+            </View>
+            <View style={styles.liveValueCard}>
+              <Ionicons name="water" size={24} color="#007AFF" />
+              <Text style={[styles.liveValue, { color: '#007AFF' }]}>{spo2 ?? '--'}</Text>
+              <Text style={styles.liveValueLabel}>SpO₂ %</Text>
+            </View>
+            <View style={styles.liveValueCard}>
+              <Ionicons name="footsteps" size={24} color="#34C759" />
+              <Text style={[styles.liveValue, { color: '#34C759' }]}>{steps ?? '--'}</Text>
+              <Text style={styles.liveValueLabel}>Steps</Text>
+            </View>
+          </View>
+
+          {/* Heart Rate Graph */}
+          {heartRateHistory.length > 1 && (
+            <View style={styles.liveChartContainer}>
+              <Text style={styles.liveChartTitle}>Heart Rate Trend (Last 40s)</Text>
+              <LineChartComponent
+                data={heartRateHistory}
+                color="#FF3B30"
+                height={180}
+              />
+            </View>
+          )}
+
+          {/* SpO2 Graph */}
+          {spo2History.length > 1 && (
+            <View style={styles.liveChartContainer}>
+              <Text style={styles.liveChartTitle}>Blood Oxygen Trend (Last 40s)</Text>
+              <LineChartComponent
+                data={spo2History}
+                color="#007AFF"
+                height={180}
+              />
+            </View>
+          )}
+
+          {/* Steps Graph */}
+          {stepsHistory.length > 1 && (
+            <View style={styles.liveChartContainer}>
+              <Text style={styles.liveChartTitle}>Step Count Progress (Last 40s)</Text>
+              <LineChartComponent
+                data={stepsHistory}
+                color="#34C759"
+                height={180}
+              />
+            </View>
+          )}
+
+          {/* Accelerometer Data */}
+          {lis3dh && (
+            <View style={styles.accelerometerSection}>
+              <Text style={styles.liveChartTitle}>LIS3DH Accelerometer</Text>
+              <Text style={styles.accelerometerData}>{lis3dh}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Quick Action Buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity 
@@ -746,6 +873,121 @@ const StatsScreen = () => {
           unit="sessions"
           color="#007AFF"
         />
+      </View>
+
+      {/* Calorie Tracking Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Calorie Tracking</Text>
+          <View style={styles.periodToggle}>
+            <TouchableOpacity
+              style={[styles.periodButton, caloriePeriod === 'week' && styles.periodButtonActive]}
+              onPress={() => {
+                setCaloriePeriod('week');
+                setCalorieWeekOffset(0);
+              }}
+            >
+              <Text style={[styles.periodButtonText, caloriePeriod === 'week' && styles.periodButtonTextActive]}>
+                Week
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.periodButton, caloriePeriod === 'month' && styles.periodButtonActive]}
+              onPress={() => {
+                setCaloriePeriod('month');
+                setCalorieWeekOffset(0);
+              }}
+            >
+              <Text style={[styles.periodButtonText, caloriePeriod === 'month' && styles.periodButtonTextActive]}>
+                Month
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Today's Calories Summary */}
+        <View style={styles.calorieSummaryCard}>
+          <View style={styles.calorieSummaryHeader}>
+            <Ionicons name="flame" size={32} color="#FF9500" />
+            <View style={styles.calorieSummaryInfo}>
+              <Text style={styles.calorieSummaryValue}>{Math.round(todayCalories)}</Text>
+              <Text style={styles.calorieSummaryLabel}>Calories Today</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Historical Chart with Navigation */}
+        <View style={styles.calorieChartCard}>
+          <View style={styles.chartNavigation}>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={() => setCalorieWeekOffset(prev => prev + 1)}
+            >
+              <Ionicons name="chevron-back" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.chartPeriodLabel}>
+              {caloriePeriod === 'week' 
+                ? calorieWeekOffset === 0 ? 'This Week' : `${calorieWeekOffset} Week${calorieWeekOffset > 1 ? 's' : ''} Ago`
+                : calorieWeekOffset === 0 ? 'This Month' : `${calorieWeekOffset} Month${calorieWeekOffset > 1 ? 's' : ''} Ago`
+              }
+            </Text>
+            
+            <TouchableOpacity
+              style={[styles.navButton, calorieWeekOffset === 0 && styles.navButtonDisabled]}
+              onPress={() => setCalorieWeekOffset(prev => Math.max(0, prev - 1))}
+              disabled={calorieWeekOffset === 0}
+            >
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={calorieWeekOffset === 0 ? '#CCC' : '#007AFF'} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {calorieData.length > 0 ? (
+            <>
+              <CalorieBarChart
+                data={calorieData}
+                maxValue={Math.max(...calorieData.map(d => d.value || 0), 100)}
+                height={200}
+                period={caloriePeriod}
+              />
+              <View style={styles.calorieStatsRow}>
+                <View style={styles.calorieStatItem}>
+                  <Text style={styles.calorieStatLabel}>Total</Text>
+                  <Text style={styles.calorieStatValue}>
+                    {Math.round(calorieData.reduce((sum, d) => sum + (d.value || 0), 0))}
+                  </Text>
+                </View>
+                <View style={styles.calorieStatItem}>
+                  <Text style={styles.calorieStatLabel}>Average</Text>
+                  <Text style={styles.calorieStatValue}>
+                    {calorieData.length > 0 
+                      ? Math.round(calorieData.reduce((sum, d) => sum + (d.value || 0), 0) / calorieData.length)
+                      : 0
+                    }
+                  </Text>
+                </View>
+                <View style={styles.calorieStatItem}>
+                  <Text style={styles.calorieStatLabel}>Peak</Text>
+                  <Text style={styles.calorieStatValue}>
+                    {Math.round(Math.max(...calorieData.map(d => d.value || 0), 0))}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Ionicons name="bar-chart-outline" size={48} color="#CCC" />
+              <Text style={styles.noDataText}>No calorie data for this period</Text>
+              <Text style={styles.noDataSubtext}>
+                Start a workout or connect WiFi health monitoring
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Workout Types */}
@@ -1505,6 +1747,228 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  liveDataSection: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+  },
+  liveDataHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  liveDataTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1D1D1F',
+  },
+  liveIndicatorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  liveDotPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
+    marginRight: 6,
+  },
+  liveTextBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FF3B30',
+    letterSpacing: 1,
+  },
+  liveValuesGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  liveValueCard: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  liveValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FF3B30',
+    marginTop: 8,
+  },
+  liveValueLabel: {
+    fontSize: 11,
+    color: '#86868B',
+    marginTop: 4,
+    fontWeight: '600',
+  },
+  liveChartContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+  },
+  liveChartTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 8,
+  },
+  accelerometerSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+  },
+  accelerometerData: {
+    fontSize: 13,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: '#333',
+    marginTop: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  periodToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 8,
+    padding: 2,
+  },
+  periodButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  periodButtonActive: {
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  periodButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#86868B',
+  },
+  periodButtonTextActive: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  calorieSummaryCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  calorieSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calorieSummaryInfo: {
+    marginLeft: 16,
+  },
+  calorieSummaryValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FF9500',
+  },
+  calorieSummaryLabel: {
+    fontSize: 14,
+    color: '#86868B',
+    marginTop: 2,
+  },
+  calorieChartCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chartNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  navButtonDisabled: {
+    opacity: 0.3,
+  },
+  chartPeriodLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+  },
+  calorieStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  calorieStatItem: {
+    alignItems: 'center',
+  },
+  calorieStatLabel: {
+    fontSize: 12,
+    color: '#86868B',
+    marginBottom: 4,
+  },
+  calorieStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FF9500',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noDataText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#999',
+    marginTop: 12,
+  },
+  noDataSubtext: {
+    fontSize: 13,
+    color: '#CCC',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 
