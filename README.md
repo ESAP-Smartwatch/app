@@ -5,6 +5,54 @@ Developers building for the iOS platform must open `.xcworkspace` instead of `.x
 
 This app syncs with the open-source smartwatch, scanning for Bluetooth signals and attempting to pair and obtain a UTF-8 encoded file with heart rate and movement data, along with the UUID identifier for persistent sync. Built by the 2025 Embedded Systems @ Purdue Smartwatch Team.
 
+## Building this project
+
+### iOS platform
+
+Quick development build (recommended for local testing)
+```bash
+# Install CocoaPods dependencies first
+cd ios && pod install && cd ..
+
+# Run the iOS build
+npx expo run:ios
+```
+
+Building for a specific device/simulator
+```bash
+# For a specific simulator
+npx expo run:ios --simulator "iPhone 15 Pro"
+
+# For a physical device
+npx expo run:ios --device
+```
+
+Directly using XCode for building
+```bash
+cd ios
+# Do not open the .xcodeproj file, since it does not have the CocoaPods dependencies.
+open FitnessTracker.xcworkspace
+```
+In XCode, select the target device or simulator from the top toolbar, then click the `Play` button or press `Cmd` + `R`.
+
+Production build for App Store submission
+```bash
+# Install EAS CLI if not already installed
+npm install -g eas-cli
+
+# Configure and build
+eas build --platform ios
+```
+Check `APP_STORE_GUIDE.md` for more detailed instructions.
+
+Prerequisites
+```bash
+# Prior to building anything, you must make sure you have XCode and Node.js installed.
+# CocoaPods should also be installed, following the command below:
+sudo gem install cocoapods
+```
+The fitness tracking app also uses react-native-ble-plx for Bluetooth functionality, which requires a physical iOS device for testing, as simulators do not support Bluetooth.
+
 ## Getting Started
 
 ### Prerequisites
