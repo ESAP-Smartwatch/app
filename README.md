@@ -1,6 +1,6 @@
 # Smartwatch Health Tracking App
 
-### Warning (11/1/2025):
+### Alert (12/7/2025):
 Developers building for the iOS platform must open `.xcworkspace` instead of `.xcodeproj` (which will cause library linking errors).
 
 This app syncs with the open-source smartwatch, scanning for Bluetooth signals and attempting to pair and obtain a UTF-8 encoded file with heart rate and movement data, along with the UUID identifier for persistent sync. Built by the 2025 Embedded Systems @ Purdue Smartwatch Team.
@@ -175,7 +175,7 @@ app/
 - Add new devices for fitness data tracking through BLE with custom device UUID
 
 ### Statistics Screen
-- Overall statistics view
+- Overall statistics view (heartrate average, O2, lis3dhtr, and step count)
 - Average calculations
 - Workout type breakdown
 
